@@ -4,57 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Icarus Word Game</title>
-    <script src="https://word-game-a1016-default-rtdb.firebaseio.com"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        .game-container { max-width: 600px; margin: auto; }
-        .image-container { margin: 20px 0; }
-        img { width: 300px; height: 200px; object-fit: cover; border: 2px solid black; }
-        input { width: 200px; padding: 5px; margin: 10px 0; text-align: center; }
-        #result { font-size: 20px; font-weight: bold; margin-top: 20px; }
-        #timer { font-size: 18px; font-weight: bold; color: red; }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .game-container {
+            max-width: 600px;
+            margin: auto;
+        }
+        .image-container {
+            margin: 20px 0;
+        }
+        img {
+            width: 300px;
+            height: 200px;
+            object-fit: cover;
+            border: 2px solid black;
+        }
+        input {
+            width: 200px;
+            padding: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        #result {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        #timer {
+            font-size: 18px;
+            font-weight: bold;
+            color: red;
+        }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <h1>Icarus Word Game</h1>
-        <p>Identify the objects in each image. The first letters should spell ICARUS!</p>
+        <h1>Word Game</h1>
+        <p>Identify the objects in each image and by using the first letters of each word, establish a single one!</p>
         
         <p id="timer">Time: 0s</p>
         
-        <div class="image-container" id="images">
-            <div><img src="image1.jpg.png" alt="Guess the word"><br><input type="text" id="answer0" placeholder="Your answer"></div>
-            <div><img src="image2.jpg.png" alt="Guess the word"><br><input type="text" id="answer1" placeholder="Your answer"></div>
-            <div><img src="image3.jpg.png" alt="Guess the word"><br><input type="text" id="answer2" placeholder="Your answer"></div>
-            <div><img src="image4.jpg.png" alt="Guess the word"><br><input type="text" id="answer3" placeholder="Your answer"></div>
-            <div><img src="image5.jpg.png" alt="Guess the word"><br><input type="text" id="answer4" placeholder="Your answer"></div>
-            <div><img src="image6.jpg.png" alt="Guess the word"><br><input type="text" id="answer5" placeholder="Your answer"></div>
-        </div>
+        <div class="image-container" id="images"></div>
         
+        <button onclick="startGame()">Start Game</button>
         <button onclick="checkAnswers()">Submit</button>
         <p id="result"></p>
+        
         <h2>Rankings</h2>
         <ul id="rankings"></ul>
     </div>
 
     <script>
-        // Firebase configuration (replace with your own credentials)
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database(app);
-
         const words = ["Igloo", "Catapult", "Anchor", "Raven", "Umbrella", "Statue"];
         let startTime, timerInterval;
+        let rankings = [];
 
         function startTimer() {
             startTime = Date.now();
@@ -64,10 +70,29 @@
             }, 1000);
         }
 
-        // Check answers and update Firebase database
+        function startGame() {
+            const container = document.getElementById('images');
+
+            // Prevent duplicate images
+            container.innerHTML = "";
+
+            words.forEach((word, index) => {
+                let div = document.createElement('div');
+                div.innerHTML = `
+                    <img src="image${index + 1}.jpg.png" alt="Guess the word">
+                    <br>
+                    <input type="text" id="answer${index}" placeholder="Your answer">
+                `;
+                container.appendChild(div);
+            });
+
+            startTimer();
+        }
+
         function checkAnswers() {
             clearInterval(timerInterval);
             let correct = true;
+
             words.forEach((word, index) => {
                 let input = document.getElementById(`answer${index}`).value.trim();
                 if (input.toLowerCase() !== word.toLowerCase()) {
@@ -77,32 +102,24 @@
 
             let elapsedTime = Math.floor((Date.now() - startTime) / 1000);
             if (correct) {
-                document.getElementById('result').innerText = `Congratulations! You spelled ICARUS in ${elapsedTime} seconds!`;
-                // Save the result to Firebase
-                firebase.database().ref('rankings').push({
-                    time: elapsedTime
-                });
+                document.getElementById('result').innerText = `Congratulations! You got all the answers correct in ${elapsedTime} seconds!`;
+                rankings.push(elapsedTime);
+                rankings.sort((a, b) => a - b);
+                updateRankings();
             } else {
                 document.getElementById('result').innerText = "Try again!";
             }
         }
 
-        // Listen for real-time updates from Firebase
-        firebase.database().ref('rankings').on('value', (snapshot) => {
-            const rankings = snapshot.val() || [];
+        function updateRankings() {
             let rankingList = document.getElementById('rankings');
             rankingList.innerHTML = "";
-            // Sort and display rankings
-            rankings.sort((a, b) => a.time - b.time);  // Sort by time
-            rankings.forEach((entry, index) => {
+            rankings.forEach((time, index) => {
                 let li = document.createElement('li');
-                li.innerText = `Group ${index + 1}: ${entry.time}s`;
+                li.innerText = `Group ${index + 1}: ${time}s`;
                 rankingList.appendChild(li);
             });
-        });
-
-        // Start timer when page is loaded
-        window.onload = startTimer;
+        }
     </script>
 </body>
 </html>
